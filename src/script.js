@@ -22,10 +22,32 @@ const scene = new THREE.Scene();
  */
 const gltfLoader = new GLTFLoader();
 
-gltfLoader.load("/models/sport_car.glb", (gltf) => {
-  console.log(gltf);
-  gltf.scene.scale.set(0.01, 0.01, 0.01);
-  scene.add(gltf.scene);
+gltfLoader.load("/models/sport_car_2.gltf", (object) => {
+  for (const child of object.scene.children[0].children) {
+    // for (let i = 0; i < child.geometry.attributes.position.array.length; i++) {}
+    console.log(child.geometry.attributes.position.array);
+    // const carPhysics = new CANNON.Shape(
+    //   child.geometry.attributes.position.array
+    // );
+
+    // console.log(carPhysics);
+    // carPhysics.vertices = child.children[0].geometry.attributes.position.array;
+    // carPhysics.boundingSphereRadius = 3.07838;
+    // const carBody = new CANNON.Body();
+    // console.log(carPhysics);
+  }
+  // const geometry = new THREE.BufferGeometry();
+  // geometry.setAttribute(
+  //   "position",
+  //   new THREE.BufferAttribute(
+  //     object.scene.children[0].children[0].geometry.attributes.position.array
+  //   )
+  // );
+  console.log(object);
+
+  object.scene.scale.set(1.0, 1.0, 1.0);
+  object.scene.position.set(0, 1, 0);
+  scene.add(object.scene);
 });
 
 /**
@@ -36,8 +58,24 @@ const world = new CANNON.World();
 world.gravity.set(0, -9.82, 0);
 
 /**
- * Floor
+ * geometries
  */
+//Sphere
+const sphere = new THREE.Mesh(
+  new THREE.SphereBufferGeometry(0.5, 32, 32),
+  new THREE.MeshStandardMaterial({})
+);
+scene.add(sphere);
+//body
+const sphereShape = new CANNON.Sphere(0.5);
+const sphereBody = new CANNON.Body({
+  mass: 1,
+  position: new CANNON.Vec3(2, 3, -1),
+  shape: sphereShape,
+});
+world.addBody(sphereBody);
+
+//Floor
 const floor = new THREE.Mesh(
   new THREE.PlaneGeometry(10, 10),
   new THREE.MeshStandardMaterial({
@@ -49,11 +87,19 @@ const floor = new THREE.Mesh(
 floor.receiveShadow = true;
 floor.rotation.x = -Math.PI * 0.5;
 scene.add(floor);
+// floor body
+
+const floorShape = new CANNON.Plane();
+const floorBody = new CANNON.Body();
+floorBody.quaternion.setFromAxisAngle(new CANNON.Vec3(-1, 0, 0), Math.PI * 0.5);
+floorBody.mass = 0;
+floorBody.addShape(floorShape);
+world.addBody(floorBody);
 
 /**
  * Lights
  */
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+const ambientLight = new THREE.AmbientLight(0xffffff, 1);
 scene.add(ambientLight);
 
 const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
@@ -131,6 +177,7 @@ const tick = () => {
 
   //update physics
   world.step(1 / 60, deltaTime, 3);
+  sphere.position.copy(sphereBody.position);
   // Update controls
   controls.update();
 
